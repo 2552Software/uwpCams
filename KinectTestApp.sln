@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KinectTestApp", "KinectTestApp.csproj", "{29858B20-7D69-4354-AFAC-EE40587AF3EF}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PoseTrackingPreview", "..\UWPApp1\CameraStreamCorrelation\cpp\PoseTrackingPreview\PoseTrackingPreview.vcxproj", "{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|ARM = Release|ARM
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Debug|ARM.ActiveCfg = Debug|ARM
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Debug|ARM.Build.0 = Debug|ARM
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Debug|ARM.Deploy.0 = Debug|ARM
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Debug|x64.ActiveCfg = Debug|x64
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Debug|x64.Build.0 = Debug|x64
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Debug|x64.Deploy.0 = Debug|x64
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Debug|x86.ActiveCfg = Debug|x86
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Debug|x86.Build.0 = Debug|x86
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Debug|x86.Deploy.0 = Debug|x86
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Release|ARM.ActiveCfg = Release|ARM
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Release|ARM.Build.0 = Release|ARM
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Release|ARM.Deploy.0 = Release|ARM
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Release|x64.ActiveCfg = Release|x64
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Release|x64.Build.0 = Release|x64
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Release|x64.Deploy.0 = Release|x64
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Release|x86.ActiveCfg = Release|x86
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Release|x86.Build.0 = Release|x86
+		{29858B20-7D69-4354-AFAC-EE40587AF3EF}.Release|x86.Deploy.0 = Release|x86
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Debug|ARM.ActiveCfg = Debug|ARM
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Debug|ARM.Build.0 = Debug|ARM
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Debug|x64.ActiveCfg = Debug|x64
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Debug|x64.Build.0 = Debug|x64
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Debug|x86.ActiveCfg = Debug|Win32
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Debug|x86.Build.0 = Debug|Win32
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Release|ARM.ActiveCfg = Release|ARM
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Release|ARM.Build.0 = Release|ARM
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Release|x64.ActiveCfg = Release|x64
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Release|x64.Build.0 = Release|x64
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Release|x86.ActiveCfg = Release|Win32
+		{C29F3FFA-12B0-5FAD-9763-D460E91A5E7A}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9F49E723-6AB3-4C2B-A4F5-09EF1F609D8F}
+	EndGlobalSection
+EndGlobal
