@@ -223,29 +223,26 @@
     }
     void ProcessCustomFrame(MediaFrameReference frame)
     {
-      if ((this.PoseFrameArrived != null) &&
-        (this.colorCoordinateSystem != null))
+      if ((this.PoseFrameArrived != null) && (this.colorCoordinateSystem != null))
       {
         var trackingFrame = PoseTrackingFrame.Create(frame);
-        var eventArgs = new mtPoseTrackingFrameEventArgs();
-
         if (trackingFrame.Status == PoseTrackingFrameCreationStatus.Success)
         {
-          // Which of the entities here are actually tracked?
-          var trackedEntities =
-            trackingFrame.Frame.Entities.Where(e => e.IsTracked).ToArray();
+            var eventArgs = new mtPoseTrackingFrameEventArgs();
+            // Which of the entities here are actually tracked?
+            var trackedEntities = trackingFrame.Frame.Entities.Where(e => e.IsTracked).ToArray();
 
-          var trackedCount = trackedEntities.Count();
+            var trackedCount = trackedEntities.Count();
 
-          if (trackedCount > 0)
-          {
-            eventArgs.PoseEntries =
-              trackedEntities
-              .Select(entity =>
+            if (trackedCount > 0)
+            {
+             eventArgs.PoseEntries =
+                trackedEntities
+                .Select(entity =>
                 mtPoseTrackingDetails.FromPoseTrackingEntity(entity, this.colorIntrinsics, this.depthColorTransform.Value))
-              .ToArray();
-          }
-          this.PoseFrameArrived(this, eventArgs);
+                .ToArray();
+            }
+            this.PoseFrameArrived(this, eventArgs);
         }
       }
     }

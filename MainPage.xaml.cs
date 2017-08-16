@@ -24,20 +24,33 @@ SOFTWARE.
 */
 namespace KinectTestApp
 {
-  using Microsoft.Graphics.Canvas;
-  using Microsoft.Graphics.Canvas.UI.Xaml;
-  using System.Numerics;
-  using System.Threading;
-  using Windows.Foundation;
-  using Windows.Graphics.Imaging;
-  using Windows.UI;
-  using Windows.UI.Core;
-  using Windows.UI.Xaml;
-  using Windows.UI.Xaml.Controls;
+    using System;
+    using Microsoft.Graphics.Canvas;
+    using Microsoft.Graphics.Canvas.UI.Xaml;
+    using System.Numerics;
+    using System.Threading;
+    using Windows.Foundation;
+    using Windows.Graphics.Imaging;
+    using Windows.UI;
+    using Windows.UI.Core;
+    using Windows.UI.Xaml;
+    using Windows.UI.Xaml.Controls;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Threading.Tasks;
+    using Windows.Storage;
+    using Xunit;
+    using Xunit.Abstractions;
+    using System.Reflection;
+    using System.Net.Security;
+    using System.Net;
+    using uPLibrary.Networking.M2Mqtt;
+    using uPLibrary.Networking.M2Mqtt.Messages;
+    using System.Text;
 
-  public sealed partial class MainPage : Page
+    public sealed partial class MainPage : Page
   {
-    public MainPage()
+
+        public MainPage()
     {
       this.InitializeComponent();
       this.Loaded += this.OnLoaded;
@@ -59,8 +72,37 @@ namespace KinectTestApp
       {
         this.canvasControl.Visibility = Visibility.Visible;
       }
-    }
-    void OnColorFrameArrived(object sender, mtSoftwareBitmapEventArgs e)
+            // create client instance
+            uPLibrary.Networking.M2Mqtt.MqttClient client = new MqttClient("127.0.0.1");
+
+            string clientId = Guid.NewGuid().ToString();
+            client.Connect(clientId);
+
+            string strValue = Convert.ToString(1);
+
+            // publish a message on "/home/temperature" topic with QoS 2
+            client.Publish("/home/temperature", Encoding.UTF8.GetBytes(strValue), MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, true);
+
+            // create client instance
+            MqttClient client2 = new MqttClient("127.0.0.1");
+
+            // register to message received
+            client.MqttMsgPublishReceived += client_MqttMsgPublishReceived;
+
+            clientId = Guid.NewGuid().ToString();
+            client.Connect(clientId);
+
+            // subscribe to $SYS for one test status
+            client.Subscribe(new string[] { "$SYS/1/uptime" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
+ 
+        }
+
+        static void client_MqttMsgPublishReceived(object sender, MqttMsgPublishEventArgs e)
+        {
+            // handle message received
+            string result = System.Text.Encoding.UTF8.GetString(e.Message);
+        }
+        void OnColorFrameArrived(object sender, mtSoftwareBitmapEventArgs e)
     {
       // Note that when this function returns to the caller, we have
       // finished with the incoming software bitmap.

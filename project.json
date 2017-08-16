@@ -1,10 +1,12 @@
 ﻿{
   "dependencies": {
-    "Microsoft.NETCore.UniversalWindowsPlatform": "5.1.0",
-    "Win2D.uwp": "1.19.0"
+    "M2Mqtt": "4.3.0",
+    "Microsoft.NETCore.UniversalWindowsPlatform": "5.4.0",
+    "Win2D.uwp": "1.21.0",
+    "xunit": "2.2.0"
   },
   "frameworks": {
-    "uap10.0": {}
+    "uap10.0.15063": {}
   },
   "runtimes": {
     "win10-arm": {},
