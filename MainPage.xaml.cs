@@ -56,11 +56,11 @@ using Windows.System.Display;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
+using s2552Media;
 
 // lots of maybe good camera stuff down the road https://github.com/Microsoft/Windows-universal-samples/blob/master/Samples/CameraGetPreviewFrame/cs/MainPage.xaml.cs
 namespace KinectTestApp
 {
-
     public sealed partial class MainPage : Page
     {
         MediaSourceReaders readers =  new MediaSourceReaders();

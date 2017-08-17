@@ -100,7 +100,6 @@
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="mtKinectColorPoseFrameHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -135,9 +134,9 @@
     </SDKReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\UWPApp1\CameraStreamCorrelation\cpp\PoseTrackingPreview\PoseTrackingPreview.vcxproj">
-      <Project>{c29f3ffa-12b0-5fad-9763-d460e91a5e7a}</Project>
-      <Name>PoseTrackingPreview</Name>
+    <ProjectReference Include="..\MediaClassLibrary1\MediaClassLibrary1.csproj">
+      <Project>{edd4d468-9913-4be6-ae96-a9994677edd7}</Project>
+      <Name>MediaClassLibrary1</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
