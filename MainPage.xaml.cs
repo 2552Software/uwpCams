@@ -47,7 +47,6 @@ using System.Text;
 using Windows.Media.MediaProperties;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Windows.ApplicationModel;
 using Windows.Devices.Enumeration;
 using Windows.Graphics.Display;
@@ -57,225 +56,91 @@ using Windows.System.Display;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
-using Windows.Storage.Streams;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.IO;
 
 // lots of maybe good camera stuff down the road https://github.com/Microsoft/Windows-universal-samples/blob/master/Samples/CameraGetPreviewFrame/cs/MainPage.xaml.cs
 namespace KinectTestApp
 {
-    [ComImport]
-    [Guid("5b0d3235-4dba-4d44-865e-8f1d0e4fd04d")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    unsafe interface IMemoryBufferByteAccess
-    {
-        void GetBuffer(out byte* buffer, out uint capacity);
-    }
 
     public sealed partial class MainPage : Page
     {
-        private static async Task SaveSoftwareBitmapAsync(SoftwareBitmap bitmap, StorageFile file)
+        MediaSourceReaders readers =  new MediaSourceReaders();
+        Rect? bitmapSize;
+        Rect canvasSize;
+        int isBetweenRenderingPass;
+        SoftwareBitmap lastConvertedColorBitmap;
+        mtPoseTrackingFrameEventArgs lastPoseEventArgs;
+        static readonly float circleRadius = 10.0f;
+
+        public MainPage()
         {
-            using (var outputStream = await file.OpenAsync(FileAccessMode.ReadWrite))
-            {
-                var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, outputStream);
-
-                // Grab the data from the SoftwareBitmap
-                encoder.SetSoftwareBitmap(bitmap);
-                await encoder.FlushAsync();
-            }
-        }
-        private unsafe void EditPixels(SoftwareBitmap bitmap)
-        {
-            // Effect is hard-coded to operate on BGRA8 format only
-            if (bitmap.BitmapPixelFormat == BitmapPixelFormat.Bgra8)
-            {
-                // In BGRA8 format, each pixel is defined by 4 bytes
-                const int BYTES_PER_PIXEL = 4;
-
-                using (var buffer = bitmap.LockBuffer(BitmapBufferAccessMode.ReadWrite))
-                using (var reference = buffer.CreateReference())
-                {
-                    // Get a pointer to the pixel buffer
-                    byte* data;
-                    uint capacity;
-                    ((IMemoryBufferByteAccess)reference).GetBuffer(out data, out capacity);
-
-                    // Get information about the BitmapBuffer
-                    var desc = buffer.GetPlaneDescription(0);
-
-                    // Iterate over all pixels
-                    for (uint row = 0; row < desc.Height; row++)
-                    {
-                        for (uint col = 0; col < desc.Width; col++)
-                        {
-                            // Index of the current pixel in the buffer (defined by the next 4 bytes, BGRA8)
-                            var currPixel = desc.StartIndex + desc.Stride * row + BYTES_PER_PIXEL * col;
-
-                            // Read the current pixel information into b,g,r channels (leave out alpha channel)
-                            var b = data[currPixel + 0]; // Blue
-                            var g = data[currPixel + 1]; // Green
-                            var r = data[currPixel + 2]; // Red
-
-                            // Boost the green channel, leave the other two untouched
-                            data[currPixel + 0] = b;
-                            data[currPixel + 1] = (byte)Math.Min(g + 80, 255);
-                            data[currPixel + 2] = r;
-                        }
-                    }
-                }
-            }
+            this.InitializeComponent();
+            this.Loaded += this.OnLoaded;
         }
 
-    static string clientId;
-    static uPLibrary.Networking.M2Mqtt.MqttClient client;
-    public MainPage()
-    {
-        this.InitializeComponent();
-      this.Loaded += this.OnLoaded;
-            newBitmap = BitmapFactory.New(512, 512);
-        }
-
-        WriteableBitmap newBitmap;
-        public byte[] ConvertBitmapToByteArray(SoftwareBitmap bitmap)
-        {
-            // this code is so horrible I will never use C# or C++ from MS unless its the only choice
-            newBitmap.Resize(bitmap.PixelWidth, bitmap.PixelHeight, WriteableBitmapExtensions.Interpolation.Bilinear);
-            bitmap.CopyToBuffer(newBitmap.PixelBuffer);
-            using (Stream stream = newBitmap.PixelBuffer.AsStream())
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                stream.CopyTo(memoryStream);
-                return memoryStream.ToArray();
-            }
-        }
         void OnCanvasControlSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-      this.canvasSize = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height);
-    }
-    async void OnLoaded(object sender, RoutedEventArgs e)
-    {
-            DispatcherTimerSetup();
+        {
+          this.canvasSize = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height);
+        }
+        async void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            this.readers.ColorFrameArrived += OnColorFrameArrived;
+            this.readers.PoseFrameArrived += OnPoseFrameArrived;
 
-            this.helper = new mtKinectColorPoseFrameHelper();
+            var suppported = await this.readers.InitialiseAsync();
 
-            this.helper.ColorFrameArrived += OnColorFrameArrived;
-      this.helper.PoseFrameArrived += OnPoseFrameArrived;
+            if (suppported)
+            {
+                this.canvasControl.Visibility = Visibility.Visible;
+            }
+            // create client instance
+            //client = new MqttClient("127.0.0.1");
 
-      var suppported = await this.helper.InitialiseAsync();
+            //clientId = Guid.NewGuid().ToString();
+            //client.Connect(clientId);
 
-      if (suppported)
-      {
-        this.canvasControl.Visibility = Visibility.Visible;
-      }
-        // create client instance
-        client = new MqttClient("127.0.0.1");
+            // register to message received
+            //client.MqttMsgPublishReceived += client_MqttMsgPublishReceived;
 
-        clientId = Guid.NewGuid().ToString();
-        client.Connect(clientId);
-
-        // register to message received
-        client.MqttMsgPublishReceived += client_MqttMsgPublishReceived;
-
-        // subscribe to $SYS for one test status
-        client.Subscribe(new string[] { "$SYS/1/uptime" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
+            // subscribe to $SYS for one test status
+            //client.Subscribe(new string[] { "$SYS/1/uptime" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
  
-    }
-    static void send(byte[] data)
-    {
-        client.Publish("kinect.1.color", data, MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, true);
-    }
-    static void client_MqttMsgPublishReceived(object sender, MqttMsgPublishEventArgs e)
-    {
-        // handle message received
-        string result = System.Text.Encoding.UTF8.GetString(e.Message);
-    }
-        private async Task<byte[]> EncodeJpeg(WriteableBitmap bmp)
-        {
-            SoftwareBitmap soft = SoftwareBitmap.CreateCopyFromBuffer(bmp.PixelBuffer, BitmapPixelFormat.Bgra8, bmp.PixelWidth, bmp.PixelHeight);
-            byte[] array = null;
-
-            using (var ms = new InMemoryRandomAccessStream())
-            {
-                BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, ms);
-                encoder.SetSoftwareBitmap(soft);
-
-                try
-                {
-                    await encoder.FlushAsync();
-                }
-                catch { }
-
-                array = new byte[ms.Size];
-                await ms.ReadAsync(array.AsBuffer(), (uint)ms.Size, InputStreamOptions.None);
-            }
-
-            return array;
         }
-        DispatcherTimer dispatcherTimer;
-        DateTimeOffset startTime;
-        DateTimeOffset lastTime;
-        DateTimeOffset stopTime;
-        int timesTicked = 1;
-        int timesToTick = 10;
-        public void DispatcherTimerSetup()
+        static void send(byte[] data)
         {
-            dispatcherTimer = new DispatcherTimer();
-            dispatcherTimer.Tick += dispatcherTimer_Tick;
-            dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
-            //IsEnabled defaults to false
-            startTime = DateTimeOffset.Now;
-            lastTime = startTime;
-            dispatcherTimer.Start();
-            //IsEnabled should now be true after calling start
+            //client.Publish("kinect.1.color", data, MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, true);
         }
-        //https://docs.microsoft.com/en-us/uwp/api/windows.ui.xaml.dispatchertimer needed to run in the UI thread
-        void dispatcherTimer_Tick(object sender, object e)
+        static void client_MqttMsgPublishReceived(object sender, MqttMsgPublishEventArgs e)
         {
-            // doto bugbug let tick run for ever, just convert and send when there is new data
-            SoftwareBitmap bitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, 10, 10);
-            byte[] data = ConvertBitmapToByteArray(bitmap);
-
-            DateTimeOffset time = DateTimeOffset.Now;
-            TimeSpan span = time - lastTime;
-            lastTime = time;
-            //Time since last tick should be very very close to Interval
-            timesTicked++;
-            if (timesTicked > timesToTick)
-            {
-                stopTime = time;
-                dispatcherTimer.Stop();
-                //IsEnabled should now be false after calling stop
-                span = stopTime - startTime;
-            }
+            // handle message received
+            string result = System.Text.Encoding.UTF8.GetString(e.Message);
         }
         void OnColorFrameArrived(object sender, mtSoftwareBitmapEventArgs e)
-    {
+        {
             //Task < byte[] > tsk = EncodeJpeg(e.writeablebitmap);
             //bugbug do this for depth etc using cool examples tsk.Wait();
             //send(e.data);
             // Note that when this function returns to the caller, we have
             // finished with the incoming software bitmap.
             if (this.bitmapSize == null)
-      {
-        this.bitmapSize = new Rect(0, 0, e.Bitmap.PixelWidth, e.Bitmap.PixelHeight);
-      }
+              {
+                this.bitmapSize = new Rect(0, 0, e.Bitmap.PixelWidth, e.Bitmap.PixelHeight);
+              }
 
-      if (Interlocked.CompareExchange(ref this.isBetweenRenderingPass, 1, 0) == 0)
-      {
-        this.lastConvertedColorBitmap?.Dispose();
+              if (Interlocked.CompareExchange(ref this.isBetweenRenderingPass, 1, 0) == 0)
+              {
+                this.lastConvertedColorBitmap?.Dispose();
 
-        // Sadly, the format that comes in here, isn't supported by Win2D when
-        // it comes to drawing so we have to convert. The upside is that 
-        // we know we can keep this bitmap around until we are done with it.
-        this.lastConvertedColorBitmap = SoftwareBitmap.Convert(
-          e.Bitmap,
-          BitmapPixelFormat.Bgra8,
-          BitmapAlphaMode.Ignore);
+                // Sadly, the format that comes in here, isn't supported by Win2D when
+                // it comes to drawing so we have to convert. The upside is that 
+                // we know we can keep this bitmap around until we are done with it.
+                this.lastConvertedColorBitmap = SoftwareBitmap.Convert(
+                  e.Bitmap,
+                  BitmapPixelFormat.Bgra8,
+                  BitmapAlphaMode.Ignore);
 
-        // Cause the canvas control to redraw itself.
-        this.InvalidateCanvasControl();
-      }
+                // Cause the canvas control to redraw itself.
+                this.InvalidateCanvasControl();
+              }
     }
     void InvalidateCanvasControl()
     {
@@ -335,13 +200,6 @@ namespace KinectTestApp
         (float)((posePoint.X / this.bitmapSize.Value.Width) * this.canvasSize.Width),
         (float)((posePoint.Y / this.bitmapSize.Value.Height) * this.canvasSize.Height)));
     }
-    Rect? bitmapSize;
-    Rect canvasSize;
-    int isBetweenRenderingPass;
-    SoftwareBitmap lastConvertedColorBitmap;
-    mtPoseTrackingFrameEventArgs lastPoseEventArgs;
-    mtKinectColorPoseFrameHelper helper;
-    static readonly float circleRadius = 10.0f;
   }
 }
 
