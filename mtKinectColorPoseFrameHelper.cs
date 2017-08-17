@@ -12,10 +12,17 @@
     using WindowsPreview.Media.Capture.Frames;
     using Windows.Foundation;
     using Windows.Graphics.Imaging;
+    using Windows.UI.Xaml.Media.Imaging;
 
     class mtSoftwareBitmapEventArgs : EventArgs
     {
-        public SoftwareBitmap Bitmap { get; set; }
+        public WriteableBitmap writeablebitmap;
+
+        public SoftwareBitmap Bitmap { get; set; } // SoftwareBitmap is why C# and MS is so annyoing, just remove it
+        public void Set(SoftwareBitmap newBitmap)
+        {
+            Bitmap = newBitmap; // likely way too many copies here but once working Bitmap will just go away
+        }
     }
     class mtPoseTrackingFrameEventArgs : EventArgs
     {
@@ -104,10 +111,18 @@
   {
     public event EventHandler<mtSoftwareBitmapEventArgs> ColorFrameArrived;
     public event EventHandler<mtPoseTrackingFrameEventArgs> PoseFrameArrived;
-
+    SpatialCoordinateSystem colorCoordinateSystem;
+    mtSoftwareBitmapEventArgs softwareBitmapEventArgs;
+    mtMediaSourceReader[] mediaSourceReaders;
+    MediaCapture mediaCapture;
+    CameraIntrinsics colorIntrinsics;
+    const string PerceptionFormat = "Perception";
+    private Matrix4x4? depthColorTransform;
+    public WriteableBitmap writeablebitmap2;
     public mtKinectColorPoseFrameHelper()
     {
       this.softwareBitmapEventArgs = new mtSoftwareBitmapEventArgs();
+      
     }
     internal async Task<bool> InitialiseAsync()
     {
@@ -218,8 +233,9 @@
         this.colorCoordinateSystem = frame.CoordinateSystem;
         this.colorIntrinsics = frame.VideoMediaFrame.CameraIntrinsics;
       }
-      this.softwareBitmapEventArgs.Bitmap = frame.VideoMediaFrame.SoftwareBitmap;
-      this.ColorFrameArrived?.Invoke(this, this.softwareBitmapEventArgs);
+     this.softwareBitmapEventArgs.Set(frame.VideoMediaFrame.SoftwareBitmap);
+    writeablebitmap2 = new WriteableBitmap(100, 100);
+    this.ColorFrameArrived?.Invoke(this, this.softwareBitmapEventArgs);
     }
     void ProcessCustomFrame(MediaFrameReference frame)
     {
@@ -265,12 +281,5 @@
         (source.CurrentFormat.MajorType == PerceptionFormat) &&
         (Guid.Parse(source.CurrentFormat.Subtype) == PoseTrackingFrame.PoseTrackingSubtype));
     }
-    SpatialCoordinateSystem colorCoordinateSystem;
-    mtSoftwareBitmapEventArgs softwareBitmapEventArgs;
-    mtMediaSourceReader[] mediaSourceReaders;
-    MediaCapture mediaCapture;
-    CameraIntrinsics colorIntrinsics;
-    const string PerceptionFormat = "Perception";
-    private Matrix4x4? depthColorTransform;
   }
 }
