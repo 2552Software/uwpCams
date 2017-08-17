@@ -59,6 +59,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.Storage.Streams;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.IO;
 
 // lots of maybe good camera stuff down the road https://github.com/Microsoft/Windows-universal-samples/blob/master/Samples/CameraGetPreviewFrame/cs/MainPage.xaml.cs
 namespace KinectTestApp
@@ -130,18 +131,35 @@ namespace KinectTestApp
     static uPLibrary.Networking.M2Mqtt.MqttClient client;
     public MainPage()
     {
-      this.InitializeComponent();
+        this.InitializeComponent();
       this.Loaded += this.OnLoaded;
-    }
-    void OnCanvasControlSizeChanged(object sender, SizeChangedEventArgs e)
+            newBitmap = BitmapFactory.New(512, 512);
+        }
+
+        WriteableBitmap newBitmap;
+        public byte[] ConvertBitmapToByteArray(SoftwareBitmap bitmap)
+        {
+            // this code is so horrible I will never use C# or C++ from MS unless its the only choice
+            newBitmap.Resize(bitmap.PixelWidth, bitmap.PixelHeight, WriteableBitmapExtensions.Interpolation.Bilinear);
+            bitmap.CopyToBuffer(newBitmap.PixelBuffer);
+            using (Stream stream = newBitmap.PixelBuffer.AsStream())
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                stream.CopyTo(memoryStream);
+                return memoryStream.ToArray();
+            }
+        }
+        void OnCanvasControlSizeChanged(object sender, SizeChangedEventArgs e)
     {
       this.canvasSize = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height);
     }
     async void OnLoaded(object sender, RoutedEventArgs e)
     {
-      this.helper = new mtKinectColorPoseFrameHelper();
+            DispatcherTimerSetup();
 
-      this.helper.ColorFrameArrived += OnColorFrameArrived;
+            this.helper = new mtKinectColorPoseFrameHelper();
+
+            this.helper.ColorFrameArrived += OnColorFrameArrived;
       this.helper.PoseFrameArrived += OnPoseFrameArrived;
 
       var suppported = await this.helper.InitialiseAsync();
@@ -194,20 +212,51 @@ namespace KinectTestApp
 
             return array;
         }
+        DispatcherTimer dispatcherTimer;
+        DateTimeOffset startTime;
+        DateTimeOffset lastTime;
+        DateTimeOffset stopTime;
+        int timesTicked = 1;
+        int timesToTick = 10;
+        public void DispatcherTimerSetup()
+        {
+            dispatcherTimer = new DispatcherTimer();
+            dispatcherTimer.Tick += dispatcherTimer_Tick;
+            dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
+            //IsEnabled defaults to false
+            startTime = DateTimeOffset.Now;
+            lastTime = startTime;
+            dispatcherTimer.Start();
+            //IsEnabled should now be true after calling start
+        }
+        //https://docs.microsoft.com/en-us/uwp/api/windows.ui.xaml.dispatchertimer needed to run in the UI thread
+        void dispatcherTimer_Tick(object sender, object e)
+        {
+            // doto bugbug let tick run for ever, just convert and send when there is new data
+            SoftwareBitmap bitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, 10, 10);
+            byte[] data = ConvertBitmapToByteArray(bitmap);
+
+            DateTimeOffset time = DateTimeOffset.Now;
+            TimeSpan span = time - lastTime;
+            lastTime = time;
+            //Time since last tick should be very very close to Interval
+            timesTicked++;
+            if (timesTicked > timesToTick)
+            {
+                stopTime = time;
+                dispatcherTimer.Stop();
+                //IsEnabled should now be false after calling stop
+                span = stopTime - startTime;
+            }
+        }
         void OnColorFrameArrived(object sender, mtSoftwareBitmapEventArgs e)
     {
-            int i = e.Bitmap.PixelWidth;
-           
-
-            e.Bitmap.CopyToBuffer(e.writeablebitmap.PixelBuffer);
-
-            Task < byte[] > tsk = EncodeJpeg(e.writeablebitmap);
-            tsk.Wait();
-            send(tsk.Result);
-
-      // Note that when this function returns to the caller, we have
-      // finished with the incoming software bitmap.
-      if (this.bitmapSize == null)
+            //Task < byte[] > tsk = EncodeJpeg(e.writeablebitmap);
+            //bugbug do this for depth etc using cool examples tsk.Wait();
+            //send(e.data);
+            // Note that when this function returns to the caller, we have
+            // finished with the incoming software bitmap.
+            if (this.bitmapSize == null)
       {
         this.bitmapSize = new Rect(0, 0, e.Bitmap.PixelWidth, e.Bitmap.PixelHeight);
       }

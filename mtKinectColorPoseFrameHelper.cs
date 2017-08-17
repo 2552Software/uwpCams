@@ -13,15 +13,34 @@
     using Windows.Foundation;
     using Windows.Graphics.Imaging;
     using Windows.UI.Xaml.Media.Imaging;
+    using System.IO;
+    using System.Runtime.InteropServices.WindowsRuntime;
 
     class mtSoftwareBitmapEventArgs : EventArgs
     {
-        public WriteableBitmap writeablebitmap;
-
+        public byte[] data;
+        WriteableBitmap newBitmap;
+        public byte[] ConvertBitmapToByteArray(SoftwareBitmap bitmap)
+        {
+            // this code is so horrible I will never use C# or C++ from MS unless its the only choice
+            newBitmap.Resize(bitmap.PixelWidth, bitmap.PixelHeight, WriteableBitmapExtensions.Interpolation.Bilinear);
+            bitmap.CopyToBuffer(newBitmap.PixelBuffer);
+            using (Stream stream = newBitmap.PixelBuffer.AsStream())
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                stream.CopyTo(memoryStream);
+                return data = memoryStream.ToArray();
+            }
+        }
+        public mtSoftwareBitmapEventArgs()
+        {
+            newBitmap = BitmapFactory.New(0, 0);
+        }
         public SoftwareBitmap Bitmap { get; set; } // SoftwareBitmap is why C# and MS is so annyoing, just remove it
         public void Set(SoftwareBitmap newBitmap)
         {
-            Bitmap = newBitmap; // likely way too many copies here but once working Bitmap will just go away
+            //ConvertBitmapToByteArray(newBitmap);
+            Bitmap = newBitmap;
         }
     }
     class mtPoseTrackingFrameEventArgs : EventArgs
@@ -234,7 +253,7 @@
         this.colorIntrinsics = frame.VideoMediaFrame.CameraIntrinsics;
       }
      this.softwareBitmapEventArgs.Set(frame.VideoMediaFrame.SoftwareBitmap);
-    writeablebitmap2 = new WriteableBitmap(100, 100);
+    
     this.ColorFrameArrived?.Invoke(this, this.softwareBitmapEventArgs);
     }
     void ProcessCustomFrame(MediaFrameReference frame)

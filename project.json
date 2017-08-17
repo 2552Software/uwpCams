@@ -3,6 +3,7 @@
     "M2Mqtt": "4.3.0",
     "Microsoft.NETCore.UniversalWindowsPlatform": "5.4.0",
     "Win2D.uwp": "1.21.0",
+    "WriteableBitmapEx": "1.5.1",
     "xunit": "2.2.0"
   },
   "frameworks": {
