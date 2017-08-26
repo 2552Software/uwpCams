@@ -36,7 +36,6 @@ namespace KinectTestApp
     {
 
         MediaSourceReaders readers = new MediaSourceReaders();
-        MediaGraphics graphics = new MediaGraphics();
 
         public MainPage()
         {
@@ -46,15 +45,7 @@ namespace KinectTestApp
 
         async void OnLoaded(object sender, RoutedEventArgs e)
         {
-            //Task refreshTask = PeriodicallyRefreshDataAsync(TimeSpan.FromMilliseconds(1000));
-
-            this.graphics.OnMedia += OnMediaArrived;
-
-            var suppported = await this.readers.InitialiseAsync();
-
-        }
-        void OnMediaArrived(object sender, MediaEvent e)
-        {
+            await this.readers.InitialiseAsync();
         }
         private void OnCanvasControlSizeChanged(object sender, SizeChangedEventArgs e)
         {
